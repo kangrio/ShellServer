@@ -85,7 +85,7 @@ class MainActivity : Activity() {
         }
 
         btnLaunchCalc.setOnClickListener {
-            val id = ShellServerHelper.runOnce(AppLauncherRunnable())
+            val id = ShellServerHelper.runOnce(AppLauncherRunnable("com.android.documentsui"))
             showOutput("Launching Calculator (Task ID: $id)")
         }
 

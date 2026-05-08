@@ -5,7 +5,6 @@ import android.util.Log
 import com.kangrio.shellserver.shared.BaseShellServerRunnable
 
 class AppLauncherRunnable(private val packageName: String = "com.android.settings") : BaseShellServerRunnable() {
-
     override fun run() {
         val context = serverContext ?: return
         try {
@@ -32,7 +31,6 @@ class AppLauncherRunnable(private val packageName: String = "com.android.setting
                             else -> args[i] = null
                         }
                     }
-                    Log.i("AppLauncherRunnable", "args: ${args.joinToString(", ")}")
                     startActivity.invoke(iAm, *args)
                     Log.i("AppLauncherRunnable", "Successfully invoked IActivityManager.startActivity")
                 } else {
@@ -41,7 +39,6 @@ class AppLauncherRunnable(private val packageName: String = "com.android.setting
             }
         } catch (e: Exception) {
             Log.e("AppLauncherRunnable", "Error: ${e.message}")
-            // Fallback to shell if needed, but keeping it simple as requested
         }
     }
 }
