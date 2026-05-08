@@ -1,6 +1,7 @@
 package com.kangrio.shellserver.client
 
 import android.content.Context
+import android.os.Bundle
 import android.os.IBinder
 import com.kangrio.shellserver.client.utils.ServerUtil
 import com.kangrio.shellserver.client.utils.ServerUtil.getRemote
@@ -20,14 +21,14 @@ class ShellServerHelper {
             return getRemote()?.exec(cmd)
         }
 
-        fun runOnce(runnable: ShellServerRunnable, initialDelay: Long = 0): Int {
-            return getRemote()?.runOnce(runnable.javaClass.name, initialDelay) ?: -1
+        fun runOnce(runnable: ShellServerRunnable, bundle: Bundle? = null, initialDelay: Long = 0): Int {
+            return getRemote()?.runOnce(runnable.javaClass.name, bundle, initialDelay) ?: -1
         }
 
         fun schedule(
-            runnable: ShellServerRunnable, initialDelay: Long = 0, period: Long,
+            runnable: ShellServerRunnable, bundle: Bundle? = null, initialDelay: Long = 0, period: Long,
         ): Int {
-            return getRemote()?.schedule(runnable.javaClass.name, initialDelay, period) ?: -1
+            return getRemote()?.schedule(runnable.javaClass.name, bundle, initialDelay, period) ?: -1
         }
 
         fun cancel(id: Int) {

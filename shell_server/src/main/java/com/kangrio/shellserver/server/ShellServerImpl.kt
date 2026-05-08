@@ -1,6 +1,7 @@
 package com.kangrio.shellserver.server
 
 import android.content.Context
+import android.os.Bundle
 import android.os.Parcel
 import android.util.Log
 import com.kangrio.shellserver.Constants
@@ -66,7 +67,7 @@ class ShellServerImpl : IShellServer.Stub() {
         return Runtime.getRuntime().exec(cmd).inputStream.bufferedReader().readText()
     }
 
-    override fun runOnce(className: String, delayMs: Long): Int {
+    override fun runOnce(className: String, bundle: Bundle, delayMs: Long): Int {
         Log.i("ShellServer", "runOnce: $delayMs")
         val id = nextId.incrementAndGet()
         val task = getRunnableObject(className)
@@ -88,6 +89,7 @@ class ShellServerImpl : IShellServer.Stub() {
 
     override fun schedule(
         className: String,
+        bundle: Bundle,
         initialDelayMs: Long,
         intervalMs: Long
     ): Int {
