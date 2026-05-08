@@ -1,0 +1,12 @@
+[versions]
+agp = "9.2.1"
+coreKtx = "1.18.0"
+dadb = "1.2.10"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+dadb = { module = "dev.mobile:dadb", version.ref = "dadb" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
