@@ -96,7 +96,7 @@ class MainActivity : Activity() {
 
         btnScreenshot.setOnClickListener {
             Thread {
-                val path = "${externalCacheDir?.absolutePath}/screenshot.png"
+                val path = "${externalCacheDir?.absolutePath}/screenshot-${System.currentTimeMillis().toString(16)}.png"
                 ShellServerHelper.exec("screencap -p $path")
                 mainHandler.post { showOutput("Screenshot saved to:\n$path") }
             }.start()
