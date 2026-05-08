@@ -18,6 +18,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 
+import java.io.ByteArrayInputStream
+import java.io.ObjectInputStream
+import java.io.ObjectStreamClass
+
 class ShellServerImpl : IShellServer.Stub() {
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
     private val nextId = AtomicInteger()
@@ -28,11 +32,9 @@ class ShellServerImpl : IShellServer.Stub() {
     override fun invodeSystemService() {
     }
 
-    fun getRunnableObject(className: String): ShellServerRunnable {
+    private fun getClassLoader(): ClassLoader {
         val context = ContextHelper.getProcessContext()
-
         val uid = getCallingUid()
-
         val pkg = context.packageManager
             .getPackagesForUid(uid)
             ?.firstOrNull()
@@ -42,7 +44,7 @@ class ShellServerImpl : IShellServer.Stub() {
             .getApplicationInfo(pkg, 0)
             .sourceDir
 
-        val loader = loaders.getOrPut(apkPath) {
+        return loaders.getOrPut(apkPath) {
             DexClassLoader(
                 apkPath,
                 context.codeCacheDir.absolutePath,
@@ -50,15 +52,23 @@ class ShellServerImpl : IShellServer.Stub() {
                 BaseShellServerRunnable::class.java.classLoader
             )
         }
+    }
 
-        val clazz = loader.loadClass(className)
-
-        val runnable = clazz
-            .getDeclaredConstructor()
-            .newInstance() as BaseShellServerRunnable
-
-        runnable.serverContext = context
-
+    private fun deserialize(data: ByteArray): ShellServerRunnable {
+        val bais = ByteArrayInputStream(data)
+        val loader = getClassLoader()
+        val ois = object : ObjectInputStream(bais) {
+            override fun resolveClass(desc: ObjectStreamClass): Class<*> {
+                return try {
+                    Class.forName(desc.name, false, loader)
+                } catch (e: ClassNotFoundException) {
+                    Log.e("ShellServer", "ClassNotFoundException: ${e.message}")
+                    super.resolveClass(desc)
+                }
+            }
+        }
+        val runnable = ois.readObject() as BaseShellServerRunnable
+        runnable.serverContext = runnable.serverContext ?: ContextHelper.getProcessContext()
         return runnable
     }
 
@@ -67,35 +77,33 @@ class ShellServerImpl : IShellServer.Stub() {
         return Runtime.getRuntime().exec(cmd).inputStream.bufferedReader().readText()
     }
 
-    override fun runOnce(className: String, bundle: Bundle, delayMs: Long): Int {
+    override fun runOnce(data: ByteArray, delayMs: Long): Int {
         Log.i("ShellServer", "runOnce: $delayMs")
         val id = nextId.incrementAndGet()
-        val task = getRunnableObject(className)
+        val task = deserialize(data)
 
         val future = executor.schedule({
             try {
                 task.run()
             } catch (e: Throwable) {
-                Log.e("ShellServer", "", e)
+                Log.e("ShellServer", "Task failed", e)
             } finally {
                 tasks.remove(id)
             }
         }, delayMs, TimeUnit.MILLISECONDS)
 
         tasks[id] = future
-
         return id
     }
 
     override fun schedule(
-        className: String,
-        bundle: Bundle,
+        data: ByteArray,
         initialDelayMs: Long,
         intervalMs: Long
     ): Int {
         Log.i("ShellServer", "schedule: $initialDelayMs, $intervalMs")
         val id = nextId.incrementAndGet()
-        val task = getRunnableObject(className)
+        val task = deserialize(data)
 
         val future =
             executor.scheduleWithFixedDelay(
@@ -103,7 +111,7 @@ class ShellServerImpl : IShellServer.Stub() {
                     try {
                         task.run()
                     } catch (e: Throwable) {
-                        Log.e("ShellServer", "", e)
+                        Log.e("ShellServer", "Task failed", e)
                     }
                 }, initialDelayMs,
                 intervalMs,

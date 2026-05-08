@@ -1,5 +1,7 @@
 package com.kangrio.shellserver.shared
 
-interface ShellServerRunnable {
+import java.io.Serializable
+
+interface ShellServerRunnable : Serializable {
     fun run()
 }
