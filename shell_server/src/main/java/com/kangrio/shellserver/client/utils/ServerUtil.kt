@@ -33,7 +33,7 @@ object ServerUtil {
     fun init(
         context: Context,
         killExisting: Boolean = true,
-        onServerStarted: ((IBinder?) -> Unit)
+        onServerStarted: ((IBinder?) -> Unit)?
     ) {
         this.onServerStarted = onServerStarted
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -159,6 +159,12 @@ object ServerUtil {
         ) {
             val binder = intent?.extras?.getBinder("binder")
             remoteBinder = binder
+            remoteBinder!!.linkToDeath(object : IBinder.DeathRecipient {
+                override fun binderDied() {
+                    init(mContext!!, onServerStarted = this@ServerUtil.onServerStarted)
+                    remoteBinder!!.unlinkToDeath(this, 0)
+                }
+            }, 0)
             mRemote = IShellServer.Stub.asInterface(remoteBinder)
             onServerStarted?.invoke(remoteBinder)
 
