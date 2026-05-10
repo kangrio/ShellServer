@@ -16,6 +16,7 @@ import com.kangrio.shellserver.client.BinderWrapper
 import com.kangrio.shellserver.server.ShellServer
 import dadb.Dadb
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import java.lang.reflect.Method
 import java.util.concurrent.Executors
 
 @SuppressLint("StaticFieldLeak")
@@ -29,6 +30,15 @@ object ServerUtil {
     private val binderReceiver = BinderReceiver()
 
     private var onServerStarted: ((IBinder?) -> Unit)? = null
+
+    var getService: Method? = null
+        private set
+
+    init {
+        val sm = Class.forName("android.os.ServiceManager")
+        getService = sm.getMethod("getService", String::class.java)
+        getService?.isAccessible = true
+    }
 
     fun init(
         context: Context,
@@ -74,20 +84,22 @@ object ServerUtil {
         }
     }
 
+    fun getSystemService(name: String): IBinder? {
+        try {
+            return getService?.invoke(null, name) as IBinder?
+        } catch (e: Throwable) {
+            Log.w(this::class.java.name, Log.getStackTraceString(e))
+        }
+        return null
+    }
+
     @SuppressLint("PrivateApi", "DiscouragedPrivateApi")
     fun getRemote(): IShellServer? {
         if (mRemote != null) {
             return mRemote
         }
-        val sm = Class.forName("android.os.ServiceManager")
-        val getService = sm.getDeclaredMethod(
-            "getService",
-            String::class.java
-        )
-        getService.isAccessible = true
 
-        val binder = getService.invoke(null, "shellserver_${mContext?.packageName}") as IBinder?
-
+        val binder = getSystemService("shellserver_${mContext?.packageName}")
         mRemote = IShellServer.Stub.asInterface(binder)
 
         return mRemote
@@ -117,21 +129,13 @@ object ServerUtil {
     }
 
     private fun getServiceInterface(serviceName: String): IInterface? {
-        val binder = BinderWrapper(
-            serviceName
-        )
+        val originalBinder = getSystemService(serviceName) ?: return null
+        val serviceDescriptor = originalBinder.interfaceDescriptor ?: return null
+        val binderWrapper = BinderWrapper(originalBinder)
 
-        val service = mContext?.getSystemService(serviceName) ?: return null
-        val mServiceField = service.javaClass.declaredFields.firstOrNull { serviceFields ->
-            IInterface::class.java.isAssignableFrom(serviceFields.type) && serviceFields.type.declaredClasses.any { it.simpleName == "Stub" }
-        } ?: return null
-
-        val stub = mServiceField.type.declaredClasses.firstOrNull {
-            it.simpleName == "Stub"
-        } ?: return null
-
+        val stub = Class.forName($$"$$serviceDescriptor$Stub")
         val asInterface = stub.getDeclaredMethod("asInterface", IBinder::class.java)
-        val iInterface = asInterface.invoke(null, binder) as IInterface
+        val iInterface = asInterface.invoke(null, binderWrapper) as IInterface
 
         return iInterface
     }

@@ -21,29 +21,10 @@ public class BinderWrapper implements IBinder {
     private static final String TAG = "BinderWrapper";
 
     private final IBinder original;
-    private static Method getService;
     private static IBinder mRemote;
 
-    static {
-        try {
-            Class<?> sm = Class.forName("android.os.ServiceManager");
-            getService = sm.getMethod("getService", String.class);
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            Log.w(TAG, Log.getStackTraceString(e));
-        }
-    }
-
-    private static IBinder getSystemService(@NonNull String name) {
-        try {
-            return (IBinder) getService.invoke(null, name);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            Log.w(TAG, Log.getStackTraceString(e));
-        }
-        return null;
-    }
-
     public BinderWrapper(String serviceName) {
-        this.original = getSystemService(serviceName);
+        this.original = ServerUtil.INSTANCE.getSystemService(serviceName);
         mRemote = ServerUtil.INSTANCE.getRemoteBinder();
     }
 
