@@ -2,6 +2,7 @@ package com.kangrio.shellserver.client
 
 import android.content.Context
 import android.os.IBinder
+import android.os.IInterface
 import com.kangrio.shellserver.client.utils.ServerUtil
 import com.kangrio.shellserver.client.utils.ServerUtil.getRemote
 import java.io.ByteArrayOutputStream
@@ -18,8 +19,20 @@ class ShellServerHelper {
             ServerUtil.init(context, killExisting, onServerStarted)
         }
 
-        fun exec(cmd: String): String? {
-            return getRemote()?.exec(cmd)
+        fun getSystemServiceInterface(
+            serviceName: String
+        ): IInterface? {
+            return ServerUtil.getSystemServiceInterface(serviceName)
+        }
+
+        fun exec(cmd: String): ShellResponse {
+            val result = getRemote()?.exec(cmd)
+            val response = ShellResponse(
+                result?.getString("output", "") ?: "",
+                result?.getString("error", "") ?: "",
+                result?.getInt("exitCode", -1) ?: -1
+            )
+            return response
         }
 
         private fun serialize(obj: Any): ByteArray? {
@@ -54,3 +67,9 @@ class ShellServerHelper {
         }
     }
 }
+
+class ShellResponse(
+    val output: String,
+    val errorOutput: String,
+    val exitCode: Int
+)

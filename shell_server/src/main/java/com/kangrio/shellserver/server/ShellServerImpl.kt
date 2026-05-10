@@ -1,6 +1,6 @@
 package com.kangrio.shellserver.server
 
-import android.content.Context
+
 import android.os.Bundle
 import android.os.Parcel
 import android.util.Log
@@ -9,18 +9,15 @@ import com.kangrio.shellserver.IShellServer
 import com.kangrio.shellserver.shared.BaseShellServerRunnable
 import com.kangrio.shellserver.shared.ShellServerRunnable
 import dalvik.system.DexClassLoader
-import dalvik.system.PathClassLoader
+import java.io.ByteArrayInputStream
+import java.io.ObjectInputStream
+import java.io.ObjectStreamClass
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-
-
-import java.io.ByteArrayInputStream
-import java.io.ObjectInputStream
-import java.io.ObjectStreamClass
 
 class ShellServerImpl : IShellServer.Stub() {
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
@@ -72,9 +69,47 @@ class ShellServerImpl : IShellServer.Stub() {
         return runnable
     }
 
-    override fun exec(cmd: String): String {
+    override fun exec(cmd: String): Bundle {
         Log.i("ShellServer", "exec: $cmd")
-        return Runtime.getRuntime().exec(cmd).inputStream.bufferedReader().readText()
+
+        return try {
+            val process = Runtime.getRuntime().exec(cmd)
+
+            var output = ""
+            var error = ""
+
+            val outThread = Thread {
+                output = process.inputStream
+                    .bufferedReader()
+                    .use { it.readText() }
+            }
+
+            val errThread = Thread {
+                error = process.errorStream
+                    .bufferedReader()
+                    .use { it.readText() }
+            }
+
+            outThread.start()
+            errThread.start()
+
+            val exitCode = process.waitFor()
+
+            outThread.join()
+            errThread.join()
+
+            Bundle().apply {
+                putString("output", output)
+                putString("error", error)
+                putInt("exitCode", exitCode)
+            }
+        } catch (e: Exception) {
+            Bundle().apply {
+                putString("output", "")
+                putString("error", Log.getStackTraceString(e))
+                putInt("exitCode", -1)
+            }
+        }
     }
 
     override fun runOnce(data: ByteArray, delayMs: Long): Int {
