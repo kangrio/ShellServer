@@ -47,6 +47,13 @@ val taskId = ShellServerHelper.runOnce(NavigationRunnable(KeyEvent.KEYCODE_HOME)
 
 This project requires the server process to be started with elevated privileges (e.g., via ADB or Root) to function as intended and perform privileged operations.
 
+## Acknowledgments
+
+This project utilizes the following libraries:
+
+- [dadb](https://github.com/mobile-dev-inc/dadb) by [mobile-dev-inc](https://github.com/mobile-dev-inc) - Used for ADB protocol implementation.
+- [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) by [LSPosed](https://github.com/LSPosed) - Used for accessing restricted system APIs.
+
 ## License
 
 Copyright (c) 2026 KangRio
