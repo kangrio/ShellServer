@@ -9,7 +9,7 @@ import android.util.Log
 import com.kangrio.shellserver.Constants
 
 // The shell server
-class ShellServer {
+internal class ShellServer {
     private var binder = ShellServerImpl()
 
     private fun sendBinder(receiverPackage: String?) {

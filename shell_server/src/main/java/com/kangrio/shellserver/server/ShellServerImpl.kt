@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-class ShellServerImpl : IShellServer.Stub() {
+internal class ShellServerImpl : IShellServer.Stub() {
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
     private val nextId = AtomicInteger()
     private val tasks = ConcurrentHashMap<Int?, ScheduledFuture<*>?>()
