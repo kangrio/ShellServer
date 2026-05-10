@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Shell Server"
+rootProject.name = "ShellServer"
 include(":sample")
 include(":shell_server")
