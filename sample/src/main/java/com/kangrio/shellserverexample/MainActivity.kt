@@ -187,7 +187,7 @@ class MainActivity : Activity() {
             val cmd = etCommand.text.toString()
             if (cmd.isNotBlank()) {
                 Thread {
-                    val result = ShellServerHelper.exec(cmd)
+                    val result = ShellServerHelper.exec(cmd).output
                     mainHandler.post {
                         showOutput("Command: $cmd\nResult:\n$result")
                     }
