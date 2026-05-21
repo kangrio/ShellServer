@@ -1,8 +1,10 @@
 package com.kangrio.shellserver.server
 
 
+import android.content.Context
 import android.os.Bundle
 import android.os.Parcel
+import android.os.Process
 import android.util.Log
 import com.kangrio.shellserver.Constants
 import com.kangrio.shellserver.IShellServer
@@ -19,10 +21,11 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class ShellServerImpl : IShellServer.Stub() {
+internal class ShellServerImpl(private val mContext: Context, hostPackageName: String) : IShellServer.Stub() {
+    private val permission = "$hostPackageName.permission.SHELL_SERVER"
     private val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
     private val nextId = AtomicInteger()
-    private val tasks = ConcurrentHashMap<Int?, ScheduledFuture<*>?>()
+    private val tasks = ConcurrentHashMap<Int, ScheduledFuture<*>>()
 
     private val loaders = ConcurrentHashMap<String, DexClassLoader>()
 
@@ -30,21 +33,20 @@ internal class ShellServerImpl : IShellServer.Stub() {
     }
 
     private fun getClassLoader(): ClassLoader {
-        val context = ContextHelper.getProcessContext()
         val uid = getCallingUid()
-        val pkg = context.packageManager
+        val pkg = mContext.packageManager
             .getPackagesForUid(uid)
             ?.firstOrNull()
             ?: error("No package")
 
-        val apkPath = context.packageManager
+        val apkPath = mContext.packageManager
             .getApplicationInfo(pkg, 0)
             .sourceDir
 
         return loaders.getOrPut(apkPath) {
             DexClassLoader(
                 apkPath,
-                context.codeCacheDir.absolutePath,
+                mContext.codeCacheDir.absolutePath,
                 null,
                 BaseShellServerRunnable::class.java.classLoader
             )
@@ -53,7 +55,7 @@ internal class ShellServerImpl : IShellServer.Stub() {
 
     private fun deserialize(data: ByteArray): ShellServerRunnable {
         val bais = ByteArrayInputStream(data)
-        val loader = getClassLoader()
+        val loader = javaClass.classLoader
         val ois = object : ObjectInputStream(bais) {
             override fun resolveClass(desc: ObjectStreamClass): Class<*> {
                 return try {
@@ -65,8 +67,13 @@ internal class ShellServerImpl : IShellServer.Stub() {
             }
         }
         val runnable = ois.readObject() as BaseShellServerRunnable
-        runnable.serverContext = runnable.serverContext ?: ContextHelper.getProcessContext()
+        runnable.serverContext = mContext
         return runnable
+    }
+
+    private fun enforcePermission() {
+        if (getCallingUid() == Process.myUid()) return
+        mContext.enforceCallingPermission(permission, "Missing permission: $permission")
     }
 
     override fun exec(cmd: String): Bundle {
@@ -164,6 +171,8 @@ internal class ShellServerImpl : IShellServer.Stub() {
     }
 
     override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+        enforcePermission()
+
         if (code != Constants.TRANSACTION_invodeSystemService) {
             return super.onTransact(code, data, reply, flags)
         }
@@ -178,11 +187,11 @@ internal class ShellServerImpl : IShellServer.Stub() {
             newData.recycle()
             return true
         }
+        val id = clearCallingIdentity()
         try {
-            val id = clearCallingIdentity()
             targetBinder.transact(targetCode, newData, reply, targetFlags)
-            restoreCallingIdentity(id)
         } finally {
+            restoreCallingIdentity(id)
             newData.recycle()
         }
         return true

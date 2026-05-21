@@ -10,10 +10,11 @@ import com.kangrio.shellserver.Constants
 
 // The shell server
 internal class ShellServer {
-    private var binder = ShellServerImpl()
+    private lateinit var binder: ShellServerImpl
+    private var hostPackageName = ""
 
     private fun sendBinder(receiverPackage: String?) {
-        val context = ContextHelper.getProcessContext() ?: return
+        val context = ContextHelper.getProcessContext()
         val intent = Intent(Constants.ACTION_RECEIVE_BINDER).apply {
             `package` = receiverPackage
             putExtras(Bundle().apply {
@@ -25,15 +26,18 @@ internal class ShellServer {
     }
 
     private fun run() {
-        val receiverPackage = if (args.isNotEmpty()) args[0] else null
-        registerService("shellserver_$receiverPackage")
-        sendBinder(receiverPackage)
+        hostPackageName = if (args.isNotEmpty()) args[0] else error("No receiver package")
+        if (!::binder.isInitialized) {
+            binder = ShellServerImpl(ContextHelper.getProcessContext(), hostPackageName)
+        }
+
+        registerService("shellserver_$hostPackageName")
+        sendBinder(hostPackageName)
     }
 
     @SuppressLint("PrivateApi")
     private fun registerService(service: String) {
         try {
-            val binder: IBinder = ShellServerImpl()
             val sm = Class.forName("android.os.ServiceManager")
 
             val addService = sm.getDeclaredMethod(
