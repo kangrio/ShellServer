@@ -163,7 +163,7 @@ object ServerUtil {
         ) {
             val binder = intent?.extras?.getBinder("binder")
             remoteBinder = binder
-            remoteBinder!!.linkToDeath(object : IBinder.DeathRecipient {
+            remoteBinder?.linkToDeath(object : IBinder.DeathRecipient {
                 override fun binderDied() {
                     init(mContext!!, onServerStarted = this@ServerUtil.onServerStarted)
                     remoteBinder!!.unlinkToDeath(this, 0)

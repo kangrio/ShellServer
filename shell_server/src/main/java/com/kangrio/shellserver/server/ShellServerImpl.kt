@@ -61,7 +61,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
                 return try {
                     Class.forName(desc.name, false, loader)
                 } catch (e: ClassNotFoundException) {
-                    Log.e("ShellServer", "ClassNotFoundException: ${e.message}")
+                    Log.e(Constants.TAG, "ClassNotFoundException: ${e.message}")
                     super.resolveClass(desc)
                 }
             }
@@ -77,7 +77,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
     }
 
     override fun exec(cmd: String): Bundle {
-        Log.i("ShellServer", "exec: $cmd")
+        Log.i(Constants.TAG, "exec: $cmd")
 
         return try {
             val process = Runtime.getRuntime().exec(cmd)
@@ -120,7 +120,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
     }
 
     override fun runOnce(data: ByteArray, delayMs: Long): Int {
-        Log.i("ShellServer", "runOnce: $delayMs")
+        Log.i(Constants.TAG, "runOnce: $delayMs")
         val id = nextId.incrementAndGet()
         val task = deserialize(data)
 
@@ -128,7 +128,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
             try {
                 task.run()
             } catch (e: Throwable) {
-                Log.e("ShellServer", "Task failed", e)
+                Log.e(Constants.TAG, "Task failed", e)
             } finally {
                 tasks.remove(id)
             }
@@ -143,7 +143,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
         initialDelayMs: Long,
         intervalMs: Long
     ): Int {
-        Log.i("ShellServer", "schedule: $initialDelayMs, $intervalMs")
+        Log.i(Constants.TAG, "schedule: $initialDelayMs, $intervalMs")
         val id = nextId.incrementAndGet()
         val task = deserialize(data)
 
@@ -153,7 +153,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
                     try {
                         task.run()
                     } catch (e: Throwable) {
-                        Log.e("ShellServer", "Task failed", e)
+                        Log.e(Constants.TAG, "Task failed", e)
                     }
                 }, initialDelayMs,
                 intervalMs,
@@ -164,7 +164,7 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
     }
 
     override fun cancel(taskId: Int) {
-        Log.i("ShellServer", "cancel: $taskId")
+        Log.i(Constants.TAG, "cancel: $taskId")
         val future = tasks.remove(taskId)
 
         future?.cancel(true)

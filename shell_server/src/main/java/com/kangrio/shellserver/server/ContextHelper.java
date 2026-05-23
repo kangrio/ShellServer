@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.MutableContextWrapper;
 import android.os.Build;
-import android.os.Looper;
 import android.os.Process;
 import android.util.Log;
 
@@ -57,12 +56,6 @@ public class ContextHelper extends MutableContextWrapper {
     public static ActivityThread getActivityThread() {
         if (mActivityThread != null) {
             return mActivityThread;
-        }
-        if (Looper.getMainLooper() == null) {
-            Looper.prepareMainLooper();
-        }
-        if (Looper.myLooper() == null) {
-            Looper.prepare();
         }
 
         mActivityThread = ActivityThread.systemMain();

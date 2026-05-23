@@ -48,7 +48,7 @@ internal class ShellServer {
             addService.isAccessible = true
             addService.invoke(null, service, binder)
         } catch (e: Throwable) {
-            Log.e("ShellServer", "registerService: ", e)
+            Log.e(Constants.TAG, "registerService: ", e)
         }
     }
 
@@ -57,18 +57,19 @@ internal class ShellServer {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            Log.i("ShellServer", "Starting ShellServer")
-            this.args = args
+            Log.i(Constants.TAG, "Starting ShellServer")
+
+            Looper.getMainLooper() ?: Looper.prepareMainLooper()
+            Looper.myLooper() ?: Looper.prepare()
+
             try {
-                if (Looper.getMainLooper() == null) {
-                    Looper.prepareMainLooper()
-                }
+                this.args = args
                 ShellServer().also {
                     it.run()
                 }
                 Looper.loop()
             } catch (e: Exception) {
-                Log.e("ShellServer", "crashed", e)
+                Log.e(Constants.TAG, "crashed", e)
             }
         }
     }
