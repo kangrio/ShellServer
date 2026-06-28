@@ -3,11 +3,13 @@ package com.kangrio.shellserver.server
 
 import android.content.Context
 import android.os.Bundle
+import android.os.IBinder
 import android.os.Parcel
 import android.os.Process
 import android.util.Log
 import com.kangrio.shellserver.Constants
 import com.kangrio.shellserver.IShellServer
+import com.kangrio.shellserver.client.WakeUpActivity
 import com.kangrio.shellserver.shared.BaseShellServerRunnable
 import com.kangrio.shellserver.shared.ShellServerRunnable
 import dalvik.system.DexClassLoader
@@ -30,6 +32,35 @@ internal class ShellServerImpl(private val mContext: Context, hostPackageName: S
     private val loaders = ConcurrentHashMap<String, DexClassLoader>()
 
     override fun invodeSystemService() {
+    }
+
+    override fun keepAliveClient(clientToken: IBinder) {
+        val uid = getCallingUid()
+        val pkg = mContext.packageManager
+            .getPackagesForUid(uid)
+            ?.firstOrNull()
+            ?: return
+
+        Log.i(Constants.TAG, "keepAliveClient: $pkg")
+
+        clientToken.linkToDeath({
+            Log.i(Constants.TAG, "client dead: $pkg")
+
+            Thread {
+                try {
+                    val component = "$pkg/${WakeUpActivity::class.java.name}"
+
+                    val process = Runtime.getRuntime().exec(
+                        arrayOf("am", "start", "-n", component)
+                    )
+
+                    val code = process.waitFor()
+                    Log.i(Constants.TAG, "am start exitCode=$code")
+                } catch (e: Throwable) {
+                    Log.e(Constants.TAG, "start failed", e)
+                }
+            }.start()
+        }, 0)
     }
 
     private fun getClassLoader(): ClassLoader {

@@ -1,6 +1,7 @@
 package com.kangrio.shellserver.client
 
 import android.content.Context
+import android.os.Binder
 import android.os.IBinder
 import android.os.IInterface
 import com.kangrio.shellserver.client.utils.ServerUtil
@@ -23,6 +24,10 @@ class ShellServerHelper {
             serviceName: String
         ): IInterface? {
             return ServerUtil.getSystemServiceInterface(serviceName)
+        }
+
+        fun keepAliveClient() {
+            getRemote()?.keepAliveClient(Binder())
         }
 
         fun exec(cmd: String): ShellResponse {
