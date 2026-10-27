@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    id("maven-publish")
 }
 
 android {
@@ -18,6 +19,9 @@ android {
     buildFeatures {
         aidl = true
     }
+    publishing {
+        singleVariant("release")
+    }
 }
 
 dependencies {
@@ -25,4 +29,17 @@ dependencies {
 
     implementation("dev.mobile:dadb:1.2.10")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                from(components["release"])
+                groupId = "com.github.kangrio"
+                artifactId = "ShellServer"
+                version = "1.0.0"
+            }
+        }
+    }
 }
