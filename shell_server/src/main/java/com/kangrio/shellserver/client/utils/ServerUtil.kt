@@ -54,7 +54,7 @@ object ServerUtil {
         Executors.newSingleThreadExecutor().execute {
             Log.i("ShellServerHelper", System.getProperties().toString())
             var home = System.getProperty("user.home")
-            home = if (home.isNullOrEmpty()) context.dataDir.absolutePath else home
+            home = if (home.isNullOrEmpty()) context.filesDir.absolutePath else home
             System.setProperty("user.home", home)
 
             val ip = if (Build.FINGERPRINT.contains("generic")) {

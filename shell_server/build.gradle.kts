@@ -38,7 +38,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.kangrio"
                 artifactId = "ShellServer"
-                version = "1.0.1"
+                version = "1.0.2"
             }
         }
     }
