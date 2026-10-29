@@ -51,7 +51,7 @@ object ServerUtil {
         }
         mContext = context
         handleShellBinder()
-        Executors.newSingleThreadExecutor().execute {
+        Executors.newSingleThreadExecutor().submit {
             Log.i("ShellServerHelper", System.getProperties().toString())
             var home = System.getProperty("user.home")
             home = if (home.isNullOrEmpty()) context.filesDir.absolutePath else home
@@ -62,7 +62,7 @@ object ServerUtil {
             } else {
                 "localhost"
             }
-            val adb = Dadb.discover(ip) ?: Dadb.create(ip, 5555)
+            val adb = Dadb.discover(ip, connectTimeout = 2000, socketTimeout = 5000) ?: Dadb.create(ip, 5555, connectTimeout = 2000, socketTimeout = 5000)
             val apkPath = mContext?.applicationInfo?.sourceDir
             val packageName = mContext?.packageName
             val serverName = "shellserver_${packageName}"
@@ -81,7 +81,7 @@ object ServerUtil {
                 if (killExisting) startWithKillExistCommand else startIfNotExistCommand
             Log.w("ShellServerHelper", command)
             Log.w(this::class.java.name, "command: ${adb.shell(command)}")
-        }
+        }.get()
     }
 
     fun getSystemService(name: String): IBinder? {
